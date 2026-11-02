@@ -1,2 +1,2 @@
-import GPIOinit
-GPIO = GPIOinit.GPIOsetup()
+import init_GPIO
+GPIO = init_GPIO.GPIOsetup()
