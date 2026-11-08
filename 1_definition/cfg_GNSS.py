@@ -7,8 +7,8 @@ device_address = 0x42 # I2c address of the GNSS module
 # print("device_address_type: ",type(device_address))
 # print("device_address: ",device_address)
 
-addr_num_bytes = 0xfd
-addr_message = 0xff
+num_bytes_addr = 0xfd
+message_addr = 0xff
 
 ### calculate checksum ###
 def calculate_checksum(data):
@@ -28,30 +28,43 @@ def calculate_checksum(data):
 
 ##### ~begin~ check for message available on GNSS module #####
 def check_message(bus):
-    write = i2c_msg.write(device_address,[addr_num_bytes])
-    read = i2c_msg.read(device_address,2)
-    bus.i2c_rdwr(write,read)
-    result = list(read)
-    length = result[0]<<8 | result[1]
+    cnt =0
+    message = b""
+    ack_ack = bytes.fromhex("b56205010200068a98c1")
+    ack_nak = bytes.fromhex("b56205000200068a97bc")
 
-    if length ==0: 
-        print("No message available. ")
-        return 0
-    else: 
-        write = i2c_msg.write(device_address,[addr_message])
-        read = i2c_msg.read(device_address, length)
+    while cnt<10:
+
+        write = i2c_msg.write(device_address,[num_bytes_addr])
+        read = i2c_msg.read(device_address,2)
         bus.i2c_rdwr(write,read)
-        message = list(read)
+        result = list(read)
+        length = result[0]<<8 | result[1]
 
-        '''wrong. should be changed'''
-        if message[0] == 0xB5 and message[1] == 0x62 and message[2] == 0x05 and message[3] == 0x01:
-            print("Message acknowledged!")
-        elif message[0] == 0xB5 and message[1] == 0x62 and message[2] == 0x05 and message[3] == 0x00:
-            print("Message not acknowledged!")
+        if length ==0: 
+            print("No message available. ")
+            cnt +=1
+            time.sleep(0.1)
+            continue
         else:
-            print("Other message received.")
-        ''''''
-    return 1
+            write = i2c_msg.write(device_address,[message_addr])
+            read = i2c_msg.read(device_address, length)
+            bus.i2c_rdwr(write,read)
+            message += bytes(read)
+
+            if ack_ack in message:
+                print("UBX-ACK-ACK Message has received.")  
+                return 1
+            elif ack_nak in message:
+                print("UBX-ACK-NAK Message has received.")  
+                return -1
+            else:
+                cnt +=1
+                time.sleep(0.5)
+
+    return 0
+
+    
 ##### ~end~ check for message available on GNSS module #####
 
 ### ~begin~ make ubx_cfg_valset message ###
@@ -92,18 +105,17 @@ print("ubx_cfg_valset Length: ",len(ubx_cfg_valset))
 ### ~begin~ main ###
 
 # with SMBus(1) as bus:
-# write = i2c_msg.write(device_address,ubx_cfg_valset)
-# bus.i2c_rdwr(write)
+    # write = i2c_msg.write(device_address,ubx_cfg_valset)
+    # bus.i2c_rdwr(write)
 
-'''wrong. should be changed'''
-# cnt = 0
-# while cnt<10:
-#     cnt +=1
-#     flag = check_message(bus)
-#     if flag == 1:
-#         print ("Message has received.")
-#         break   
-#     else:
-#         continue  
-''''''
+    # flag = check_message(bus)
+    # if flag == 1:
+    #     print("UBX-ACK-ACK Message has received. Configuration is successful.")
+    # elif flag == -1:
+    #     print("UBX-ACK-NAK Message has received. Configuration is failed.")
+    # elif flag == 0:
+    #     print(""Timeout: No ACK/NAK received."")
+
+    
+
 
