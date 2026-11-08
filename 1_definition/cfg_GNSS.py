@@ -1,6 +1,6 @@
 # import init_GPIO
 # GPIO = init_GPIO.GPIOsetup()
-from smbus2 import SMBus,i2c_msg
+from smbus2 import i2c_msg
 import time
 
 device_address = 0x42 # I2c address of the GNSS module
@@ -60,7 +60,7 @@ def check_message(bus):
                 return -1
             else:
                 cnt +=1
-                time.sleep(0.5)
+                time.sleep(0.1)
 
     return 0
 
@@ -97,24 +97,25 @@ ubx_cfg_valset = ubx_cfg_valset + CK_ubx_cfg_valset
 # print("PL__ubx_cfg_valset: ",PL__ubx_cfg_valset.hex(" "))
 # print("PL__ubx_cfg_valset Length: ",len(PL__ubx_cfg_valset))
 
-print("ubx_cfg_valset: ",ubx_cfg_valset.hex(" "))
-print("ubx_cfg_valset Length: ",len(ubx_cfg_valset))
+# print("ubx_cfg_valset: ",ubx_cfg_valset.hex(" "))
+# print("ubx_cfg_valset Length: ",len(ubx_cfg_valset))
 
 ### ~end~ make ubx_cfg_valset message ###
 
-### ~begin~ main ###
+### ~begin~ GNSS Configuration ###
 
-# with SMBus(1) as bus:
-    # write = i2c_msg.write(device_address,ubx_cfg_valset)
-    # bus.i2c_rdwr(write)
+def configure_gnss(bus):
+    write = i2c_msg.write(device_address,ubx_cfg_valset)
+    bus.i2c_rdwr(write)
 
-    # flag = check_message(bus)
-    # if flag == 1:
-    #     print("UBX-ACK-ACK Message has received. Configuration is successful.")
-    # elif flag == -1:
-    #     print("UBX-ACK-NAK Message has received. Configuration is failed.")
-    # elif flag == 0:
-    #     print(""Timeout: No ACK/NAK received."")
+    flag = check_message(bus)
+    return flag
+
+### ~end~ GNSS Configuration ###
+        
+
+
+
 
     
 
