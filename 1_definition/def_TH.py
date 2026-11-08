@@ -2,11 +2,9 @@
 # ----------------------------------------
 # Plz refer -> https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bmp581-ds004.pdf
 # ----------------------------------------
-import init_GPIO
 from smbus2 import SMBus
 
 bus = SMBus(1)
-GPIO = init_GPIO.GPIOsetup()
 
 # addr
 TH_addr = 0x47
