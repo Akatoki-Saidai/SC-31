@@ -75,15 +75,14 @@ cfg_i2coutprot_nmea = bytes([0x02,0x00,0x72,0x10]) # disable NMEA output on I2C
 cfg_msgout_ubx_nav_pvt_i2c = bytes([0x06,0x00,0x91,0x20]) # output NAV_PVT for all positioning solutions
 
 cfgData = cfg_i2coutprot_nmea + bytes([0x00]) + cfg_msgout_ubx_nav_pvt_i2c + bytes([0x01])
-## make payload for ubx_cfg_valset message
-PL__ubx_cfg_valset = PLfirst4bytes__ubx_cfg_valset + cfgData
-## calculate payload length
-PLlen_ubx_cfg_valset = len(PL__ubx_cfg_valset).to_bytes(2,byteorder='little')
+
+PL__ubx_cfg_valset = PLfirst4bytes__ubx_cfg_valset + cfgData# make payload for ubx_cfg_valset message
+
+PLlen_ubx_cfg_valset = len(PL__ubx_cfg_valset).to_bytes(2,byteorder='little')# calculate payload length
 # print("PLlen_ubx_cfg_valset: ",PLlen_ubx_cfg_valset)
 
-## add header, payloadlength and payload to ubx_cfg_valset
-ubx_cfg_valset = bytes([0xB5,0x62,0x06,0x8a])+PLlen_ubx_cfg_valset + PL__ubx_cfg_valset
 
+ubx_cfg_valset = bytes([0xB5,0x62,0x06,0x8a])+PLlen_ubx_cfg_valset + PL__ubx_cfg_valset# add header, payloadlength and payload to ubx_cfg_valset
 ## calculate checksum for ubx_cfg_valset
 CK_ubx_cfg_valset = calculate_checksum(ubx_cfg_valset)
 # print("CK_ubx_cfg_valset: ",CK_ubx_cfg_valset.hex(" "))
@@ -112,11 +111,61 @@ def configure_gnss(bus):
     return flag
 
 ### ~end~ GNSS Configuration ###
-        
 
 
+def read_GNSS(bus):
+    message = b""
+
+    write = i2c_msg.write(device_address,[num_bytes_addr])
+    read = i2c_msg.read(device_address,2)
+    bus.i2c_rdwr(write,read)
+    result = list(read)
+    length = result[0]<<8 | result[1]
+
+    if length ==0:
+        return message
+    else:
+        write = i2c_msg.write(device_address,[message_addr])
+        read = i2c_msg.read(device_address, length)
+        bus.i2c_rdwr(write,read)
+        message = bytes(read)
+        return message
+
+def find_ubx_nav_pvt(message):
+    header_ubx_nav_pvt = bytes.fromhex("b56201075c00")
+    index=None
+    
+    if len(message) <6:
+        print("message length is too short.")
+        return None
+    else:
+        for i in range(len(message)-5):
+            if message[i:i+6] == header_ubx_nav_pvt:
+                index = i
+                break
+            else:
+                continue
+
+        if index is None:
+            print("ubx_nav_pvt header is not found")
+            return None
+        elif len(message)-index >= 100:
+            packet_data = message[index:index+100]
+            checksum = calculate_checksum(packet_data[:-2])
+            if checksum == packet_data[-2:]:
+                print("clean ubx_nav_pvt is found!")
+                return  packet_data
+            else:
+                print("check sum is not right.")
+                return None
+        if len(message)-index < 100:
+            partial_packet_data = message[index:]
+            print("a part of ubx_nav_pvt is found!")
+            return partial_packet_data
+    
 
 
     
+
 
 
