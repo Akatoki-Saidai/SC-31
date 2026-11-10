@@ -1,6 +1,6 @@
 # import init_GPIO
 # GPIO = init_GPIO.GPIOsetup()
-from smbus2 import i2c_msg
+from smbus2 import i2c_msg,SMBus
 import time
 
 device_address = 0x42 # I2c address of the GNSS module
@@ -24,16 +24,23 @@ def calculate_checksum(data):
 
     CK = bytes([CK_A,CK_B])
     return CK
-########################
 
-##### ~begin~ check for message available on GNSS module #####
+def check_checksum(data):
+    Buffer = data[:-2]
+    CS=calculate_checksum(Buffer)
+    if CS == data[-2:]:
+        return 1 
+    else:
+        return 0
+
+#####  check for message available on GNSS module #####
 def check_message(bus):
     cnt =0
     message = b""
     ack_ack = bytes.fromhex("b56205010200068a98c1")
     ack_nak = bytes.fromhex("b56205000200068a97bc")
 
-    while cnt<10:
+    while cnt<30:
 
         write = i2c_msg.write(device_address,[num_bytes_addr])
         read = i2c_msg.read(device_address,2)
@@ -65,53 +72,62 @@ def check_message(bus):
     return 0
 
     
-##### ~end~ check for message available on GNSS module #####
 
-### ~begin~ make ubx_cfg_valset message ###
+###  make ubx_cfg_valset message ###
+def make_ubx_cfg_valset():
 
-PLfirst4bytes__ubx_cfg_valset = bytes([0x00,0x01,0x00,0x00])
+    PLfirst4bytes__ubx_cfg_valset = bytes([0x00,0x01,0x00,0x00])
 
-cfg_i2coutprot_nmea = bytes([0x02,0x00,0x72,0x10]) # disable NMEA output on I2C
-cfg_msgout_ubx_nav_pvt_i2c = bytes([0x06,0x00,0x91,0x20]) # output NAV_PVT for all positioning solutions
+    cfg_i2coutprot_nmea = bytes([0x02,0x00,0x72,0x10]) # disable NMEA output on I2C
+    cfg_msgout_ubx_nav_pvt_i2c = bytes([0x06,0x00,0x91,0x20]) # output NAV_PVT for all positioning solutions
 
-cfgData = cfg_i2coutprot_nmea + bytes([0x00]) + cfg_msgout_ubx_nav_pvt_i2c + bytes([0x01])
+    cfgData = cfg_i2coutprot_nmea + bytes([0x00]) + cfg_msgout_ubx_nav_pvt_i2c + bytes([0x01])
 
-PL__ubx_cfg_valset = PLfirst4bytes__ubx_cfg_valset + cfgData# make payload for ubx_cfg_valset message
+    PL__ubx_cfg_valset = PLfirst4bytes__ubx_cfg_valset + cfgData# make payload for ubx_cfg_valset message
 
-PLlen_ubx_cfg_valset = len(PL__ubx_cfg_valset).to_bytes(2,byteorder='little')# calculate payload length
-# print("PLlen_ubx_cfg_valset: ",PLlen_ubx_cfg_valset)
+    PLlen_ubx_cfg_valset = len(PL__ubx_cfg_valset).to_bytes(2,byteorder='little')# calculate payload length
+    # print("PLlen_ubx_cfg_valset: ",PLlen_ubx_cfg_valset)
+
+    ubx_cfg_valset = bytes([0xB5,0x62,0x06,0x8a])+PLlen_ubx_cfg_valset + PL__ubx_cfg_valset# add header, payloadlength and payload to ubx_cfg_valset
+
+    CK_ubx_cfg_valset = calculate_checksum(ubx_cfg_valset)# calculate checksum for ubx_cfg_valset
+    # print("CK_ubx_cfg_valset: ",CK_ubx_cfg_valset.hex(" "))
+
+    ubx_cfg_valset = ubx_cfg_valset + CK_ubx_cfg_valset# update ubx_cfg_valset with checksum
+
+    # print("cfgData: ",cfgData.hex(" "))    
+    # print("cfgData Length: ",len(cfgData))
+
+    # print("PL__ubx_cfg_valset: ",PL__ubx_cfg_valset.hex(" "))
+    # print("PL__ubx_cfg_valset Length: ",len(PL__ubx_cfg_valset))
+
+    # print("ubx_cfg_valset: ",ubx_cfg_valset.hex(" "))
+    # print("ubx_cfg_valset Length: ",len(ubx_cfg_valset))
+    return ubx_cfg_valset
 
 
-ubx_cfg_valset = bytes([0xB5,0x62,0x06,0x8a])+PLlen_ubx_cfg_valset + PL__ubx_cfg_valset# add header, payloadlength and payload to ubx_cfg_valset
-## calculate checksum for ubx_cfg_valset
-CK_ubx_cfg_valset = calculate_checksum(ubx_cfg_valset)
-# print("CK_ubx_cfg_valset: ",CK_ubx_cfg_valset.hex(" "))
-
-## update ubx_cfg_valset with checksum
-ubx_cfg_valset = ubx_cfg_valset + CK_ubx_cfg_valset
-
-# print("cfgData: ",cfgData.hex(" "))    
-# print("cfgData Length: ",len(cfgData))
-
-# print("PL__ubx_cfg_valset: ",PL__ubx_cfg_valset.hex(" "))
-# print("PL__ubx_cfg_valset Length: ",len(PL__ubx_cfg_valset))
-
-# print("ubx_cfg_valset: ",ubx_cfg_valset.hex(" "))
-# print("ubx_cfg_valset Length: ",len(ubx_cfg_valset))
-
-### ~end~ make ubx_cfg_valset message ###
-
-### ~begin~ GNSS Configuration ###
-
+###  GNSS Configuration ###
 def configure_gnss(bus):
+    ubx_cfg_valset = make_ubx_cfg_valset()
     write = i2c_msg.write(device_address,ubx_cfg_valset)
     bus.i2c_rdwr(write)
 
     flag = check_message(bus)
     return flag
 
-### ~end~ GNSS Configuration ###
-
+### make test data for checking ubx_nav_pvt packet reading function is OK###
+def make_ubx_nav_pvt_testdata():
+    header_ubx_nav_pvt = bytes.fromhex("b56201075c00")
+    # print("header_ubx_nav_pvt is: ",header_ubx_nav_pvt.hex(" "))
+    payload = bytes(92)
+    # print("the payload of test_ubx_nav_pvt is: ",payload.hex(" "))
+    ubx_nav_pvt_testdata = header_ubx_nav_pvt + payload
+    # print("test data without Checksum is :",ubx_nav_pvt_testdata.hex(" "))
+    CS = calculate_checksum(ubx_nav_pvt_testdata)
+    # print("check sum is : ",CS.hex(" "))
+    ubx_nav_pvt_testdata += CS
+    # print("the test_ubx_nav_pvt is: ",ubx_nav_pvt_testdata.hex(" "))
+    return ubx_nav_pvt_testdata
 
 def read_GNSS(bus):
     message = b""
@@ -131,13 +147,16 @@ def read_GNSS(bus):
         message = bytes(read)
         return message
 
+
+
+
+
 def find_ubx_nav_pvt(message):
     header_ubx_nav_pvt = bytes.fromhex("b56201075c00")
     index=None
-    
     if len(message) <6:
         print("message length is too short.")
-        return None
+        return "incomplete",message,b""
     else:
         for i in range(len(message)-5):
             if message[i:i+6] == header_ubx_nav_pvt:
@@ -148,24 +167,82 @@ def find_ubx_nav_pvt(message):
 
         if index is None:
             print("ubx_nav_pvt header is not found")
-            return None
+            return "no-header",message[-5:],b""
         elif len(message)-index >= 100:
             packet_data = message[index:index+100]
             checksum = calculate_checksum(packet_data[:-2])
             if checksum == packet_data[-2:]:
                 print("clean ubx_nav_pvt is found!")
-                return  packet_data
+                pending = message[index+100:]
+                return  "complete", pending,packet_data
             else:
                 print("check sum is not right.")
-                return None
+                return "checksum_error",message[index+1:],b""
         if len(message)-index < 100:
-            partial_packet_data = message[index:]
+            message = message[index:]
             print("a part of ubx_nav_pvt is found!")
-            return partial_packet_data
+            return "incomplete", message,b""
+    
+def collect_ubx_nav_pvt(bus,pending=b""):
+    cnt = 0
+    message = pending
+    while cnt <30:
+        flag,message,packetdata= find_ubx_nav_pvt(message)
+        if flag == "complete":
+            print("ubx_nav_pavt packet is full.")
+            return message,packetdata
+        if flag =="checksum_error":
+            continue
+
+        else:
+            message += read_GNSS(bus)
+            cnt +=1
+            time.sleep(0.1)
+
+    flag,message,packetdata= find_ubx_nav_pvt(message)
+    if flag == "complete":
+        print("ubx_nav_pavt packet is full.")
+        return message,packetdata
+    
+    print("ubx_nav_pvt reception time out.")
+    return message,None
+            
+            
+
+
+
     
 
 
-    
+if __name__ == "__main__":
+    # test_message = bytes(3)+make_ubx_nav_pvt_testdata()
+    # flag,frag_data,packetdata = find_ubx_nav_pvt(test_message)
+    # print("flag is : ",flag,"\nfrag_data is : ",frag_data.hex(" "),"\npacket data is : ",packetdata.hex(" ")) 
+
+    # short_test_message = test_message[:-10]
+    # flag,frag_data,packetdata = find_ubx_nav_pvt(short_test_message)
+    # print("flag is : ",flag,"\nfrag_data is : ",frag_data.hex(" "),"\npacket data is : ",packetdata.hex(" ")) 
+
+    busNum = 1
+    with SMBus(busNum) as bus:
+        flag=configure_gnss(bus)
+        if flag ==1:
+            message, packetdata = collect_ubx_nav_pvt(bus,pending=b"")
+
+            if packetdata != None:
+                print("ubx_nav_pvt packet is received.")
+                print("length of packet is : ",len(packetdata))
+            else:
+                print("ubx_nav_pvt acquisition is failed.")
+
+        else: 
+            print("GNSS configuration is failed.",flag)
+
+
+
+
+
+
 
 
 
