@@ -3,7 +3,7 @@ GPIO = init_GPIO.GPIOsetup()
 
 #LiDAR_reader
 # ----------------------------------------
-# Plz refer -> https://en.benewake.com/uploadfiles/2024/04/20240426140053930.pdf
+# Plz refer to -> https://en.benewake.com/uploadfiles/2024/04/20240426140053930.pdf
 # ----------------------------------------
 from smbus2 import SMBus, i2c_msg
 import time

@@ -1,6 +1,6 @@
 # BMP581_reader
 # ----------------------------------------
-# Plz refer -> https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bmp581-ds004.pdf
+# Plz refer to -> https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bmp581-ds004.pdf
 # ----------------------------------------
 from smbus2 import SMBus
 
