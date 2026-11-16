@@ -1,3 +1,8 @@
+# BMP581_reader
+# ----------------------------------------
+# Plz refer to -> https://www.digikey.jp/ja/products/detail/tdk-invensense/ICM-42605/9816540
+# ----------------------------------------
+
 import init_GPIO
 GPIO = init_GPIO.GPIOsetup()
 
