@@ -23,7 +23,7 @@ ODR_ref_rate = 0x17
 pwr_mode = 0x01
 # 0x00: Standby, 0x01: Normal, 0x02: Forced, 0x03: Non-stop
 
-class TH:
+class BMP:
     def __init__(self):
         self.bus = bus
         self.GPIO = GPIO
@@ -31,7 +31,7 @@ class TH:
         ODR_CONFIG = pwr_mode | (0b0 << 7) | (ODR_ref_rate << 2)
         bus.write_byte_data(TH_addr, OSR_addr, OSR_CONFIG)
         bus.write_byte_data(TH_addr, ODR_addr, ODR_CONFIG)
-    def THread():
+    def read():
         data = []
         data = bus.read_i2c_block_data(TH_addr, start_data_addr, 6)
 
