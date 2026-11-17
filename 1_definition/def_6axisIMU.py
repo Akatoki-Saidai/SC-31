@@ -26,8 +26,38 @@ EXPECTED_Z_SIGN = 1
 MIN_ACCEL = 0.75
 MAX_ACCEL = 1.25
 SAMPLE_INTERVAL = 0.01
+class ICM
+    def __init__():
+        # Start I2C communication
+        bus = smbus2.SMBus(I2C_BUS)
+        # Check the sensor connection
+        device_id = bus.read_byte_data(I2C_ADDRESS, 0x75)
+        if device_id != 0x42:
+            raise RuntimeError("ICM-42605 is not detected")
 
+        # Initialize the sensor
+        # PWR_MANAGEMENT -> GYRO_MODE : low noise, ACCEL_MODE : low noise
+        bus.write_byte_data(I2C_ADDRESS, 0x4E, 0x0F)
+        time.sleep(0.05)
+        # GYRO_CONFIG -> GYRO_FULLSCALERANGE_SELECT : ±250bps, GYRO_ODR : 100Hz
+        bus.write_byte_data(I2C_ADDRESS, 0x4F, 0x68)
+        # ACCEL_CONFIG -> ACCEL_FULLSCALERANGE_SELECT : ±4g, ACCEL_ODR : 100Hz
+        bus.write_byte_data(I2C_ADDRESS, 0x50, 0x48)
 
+    # Read acceleration and angular velocity
+    def read():
+        data = bus.read_i2c_block_data(I2C_ADDRESS, 0x1F, 12)
+        values = [
+            int.from_bytes(bytes(data[i:i+2]), "big", signed=True)
+            for i in range(0, 12, 2)
+        ]
+
+        # Convert acceleration to g and angular velocity to deg/s
+        return (
+            *[v / ACCEL_SCALE for v in values[:3]],
+            *[v / GYRO_SCALE for v in values[3:]]
+        )
+'''
 # Quaternion attitude estimator
 class QuaternionAttitudeEstimator:
 
@@ -90,38 +120,6 @@ class QuaternionAttitudeEstimator:
 
         # Convert radians to degrees
         return np.degrees(roll), np.degrees(pitch)
-class ICM
-    def __init__():
-        # Start I2C communication
-        bus = smbus2.SMBus(I2C_BUS)
-        # Check the sensor connection
-        device_id = bus.read_byte_data(I2C_ADDRESS, 0x75)
-        if device_id != 0x42:
-            raise RuntimeError("ICM-42605 is not detected")
-
-        # Initialize the sensor
-        # PWR_MANAGEMENT -> GYRO_MODE : low noise, ACCEL_MODE : low noise
-        bus.write_byte_data(I2C_ADDRESS, 0x4E, 0x0F)
-        time.sleep(0.05)
-        # GYRO_CONFIG -> GYRO_FULLSCALERANGE_SELECT : ±250bps, GYRO_ODR : 100Hz
-        bus.write_byte_data(I2C_ADDRESS, 0x4F, 0x68)
-        # ACCEL_CONFIG -> ACCEL_FULLSCALERANGE_SELECT : ±4g, ACCEL_ODR : 100Hz
-        bus.write_byte_data(I2C_ADDRESS, 0x50, 0x48)
-
-    # Read acceleration and angular velocity
-    def read():
-        data = bus.read_i2c_block_data(I2C_ADDRESS, 0x1F, 12)
-        values = [
-            int.from_bytes(bytes(data[i:i+2]), "big", signed=True)
-            for i in range(0, 12, 2)
-        ]
-
-        # Convert acceleration to g and angular velocity to deg/s
-        return (
-            *[v / ACCEL_SCALE for v in values[:3]],
-            *[v / GYRO_SCALE for v in values[3:]]
-        )
-'''
     # Calibrate gyroscope offset
     def calibrate_gyro(samples=200):
         total = [0.0, 0.0, 0.0]
