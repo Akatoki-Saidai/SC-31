@@ -1,6 +1,3 @@
-import init_GPIO
-GPIO = init_GPIO.GPIOsetup()
-import init_GPIO
 import time
 import cv2
 from picamera import PiCamera
@@ -15,8 +12,6 @@ camera.resolution = (640, 480)
 camera.framerate = 30
 
 raw_capture = PiRGBArray(camera, size=(640, 480))
-
-time.sleep(0.1)
 
 
 def cameraRead():
