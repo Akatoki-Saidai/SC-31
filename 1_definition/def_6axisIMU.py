@@ -10,20 +10,7 @@ import numpy as np
 
 # I2C settings
 I2C_ADDRESS = 0x68
-# Measurement phase
-PHASE = "descent"  # descent: during free fall, landed: after landing
 
-# Sensor data conversion settings
-ACCEL_SCALE = 8192.0
-GYRO_SCALE = 131.0
-
-# Detection conditions
-TILT_THRESHOLD = 30.0
-ABNORMAL_TIME = 2.0
-EXPECTED_Z_SIGN = 1
-MIN_ACCEL = 0.75
-MAX_ACCEL = 1.25
-SAMPLE_INTERVAL = 0.01
 class ICM
     def __init__(self, i2cbus):
         # Start I2C communication
@@ -56,6 +43,21 @@ class ICM
             *[v / GYRO_SCALE for v in values[3:]]
         )
 '''
+# Measurement phase
+PHASE = "descent"  # descent: during free fall, landed: after landing
+
+# Sensor data conversion settings
+ACCEL_SCALE = 8192.0
+GYRO_SCALE = 131.0
+
+# Detection conditions
+TILT_THRESHOLD = 30.0
+ABNORMAL_TIME = 2.0
+EXPECTED_Z_SIGN = 1
+MIN_ACCEL = 0.75
+MAX_ACCEL = 1.25
+SAMPLE_INTERVAL = 0.01
+
 # Quaternion attitude estimator
 class QuaternionAttitudeEstimator:
 
