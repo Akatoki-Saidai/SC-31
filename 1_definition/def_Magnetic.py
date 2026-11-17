@@ -23,8 +23,6 @@ class BM:
             # CTRL_SETTING2 -> DRDY_CONF : activate, AD_converter_STATUS : start
             bus.write_byte_data(I2C_ADDRESS, 0x1C, 0x0C)
             bus.write_byte_data(I2C_ADDRESS, 0x1D, 0x40)
-
-    # 3. データ読み取り関数
     def read():
         data = bus.read_i2c_block_data(I2C_ADDRESS, 0x10, 6)
         values = [
