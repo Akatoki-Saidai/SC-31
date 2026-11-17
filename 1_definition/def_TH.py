@@ -4,8 +4,6 @@
 # ----------------------------------------
 from smbus2 import SMBus
 
-bus = SMBus(1)
-
 # addr
 TH_addr = 0x47
 start_data_addr = 0x1D
@@ -18,15 +16,13 @@ temp_oversampling = 0x0
 # 0x0: 1x, 0x1: 2x, 0x2: 4x,
 # 0x3: 8x, 0x4: 16x, 0x5: 32x,
 # 0x6: 64x, 0x7: 128x
-
 ODR_ref_rate = 0x17
 pwr_mode = 0x01
 # 0x00: Standby, 0x01: Normal, 0x02: Forced, 0x03: Non-stop
 
 class BMP:
-    def __init__(self):
-        self.bus = bus
-        self.GPIO = GPIO
+    def __init__(self, i2cbus):
+        self.bus = i2cbus
         OSR_CONFIG = (prs_oversampling << 3) | temp_oversampling | (0b01 << 6)
         ODR_CONFIG = pwr_mode | (0b0 << 7) | (ODR_ref_rate << 2)
         bus.write_byte_data(TH_addr, OSR_addr, OSR_CONFIG)

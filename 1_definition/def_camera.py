@@ -4,11 +4,11 @@ from picamera import PiCamera
 from picamera.array import PiRGBArray
 
 class camera:
-    def __init__():
+    def __init__(self):
         # Camera
         width_cons = 640
         height_cons = 480
-        camera = PiCamera()
+        self.camera = PiCamera()
         camera.resolution = (640, 480)
         camera.framerate = 30
         raw_capture = PiRGBArray(camera, size=(640, 480))

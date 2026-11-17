@@ -10,8 +10,6 @@ import numpy as np
 
 # I2C settings
 I2C_ADDRESS = 0x68
-I2C_BUS = 1
-
 # Measurement phase
 PHASE = "descent"  # descent: during free fall, landed: after landing
 
@@ -27,9 +25,9 @@ MIN_ACCEL = 0.75
 MAX_ACCEL = 1.25
 SAMPLE_INTERVAL = 0.01
 class ICM
-    def __init__():
+    def __init__(self, i2cbus):
         # Start I2C communication
-        bus = smbus2.SMBus(I2C_BUS)
+        self.bus = i2cbus
         # Check the sensor connection
         device_id = bus.read_byte_data(I2C_ADDRESS, 0x75)
         if device_id != 0x42:
