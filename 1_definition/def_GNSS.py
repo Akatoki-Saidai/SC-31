@@ -1,5 +1,7 @@
-import init_GPIO
-GPIO = init_GPIO.GPIOsetup()
+#MAX-M10M-00B_reader
+# ----------------------------------------
+# Plz refer to -> https://akizukidenshi.com/goodsaffix/MAX-M10M-00B_DataSheet_UBX-22028884.pdf
+# ----------------------------------------
 from smbus2 import i2c_msg,SMBus
 import time
 
@@ -232,11 +234,11 @@ def parse_ubx_nav_pvt(packetdata):
     fullyResolved = bool(valid & 0x04)
 
     gnss_data = {
-    "iTOW": iTOW,
-    "validDate": validDate,
-    "validTime": validTime,
-    "fullyResolved": fullyResolved
-}
+        "iTOW": iTOW,
+        "validDate": validDate,
+        "validTime": validTime,
+        "fullyResolved": fullyResolved
+    }
     
     if validDate and validTime and fullyResolved:
         print("year: ",year,",")
@@ -375,8 +377,3 @@ if __name__ == "__main__":
 
         else: 
             print("GNSS configuration is failed.",flag)
-
-
-
-
-

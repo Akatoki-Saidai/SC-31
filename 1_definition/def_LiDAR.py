@@ -1,7 +1,4 @@
-import init_GPIO
-GPIO = init_GPIO.GPIOsetup()
-
-#LiDAR_reader
+#TFmini-s_reader
 # ----------------------------------------
 # Plz refer to -> https://en.benewake.com/uploadfiles/2024/04/20240426140053930.pdf
 # ----------------------------------------

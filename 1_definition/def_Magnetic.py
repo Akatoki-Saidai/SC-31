@@ -2,7 +2,6 @@
 # ----------------------------------------
 # Plz refer to -> https://akizukidenshi.com/goodsaffix/BM1422AGMV.pdf
 # ----------------------------------------
-
 from smbus2 import SMbus
 
 # def I2C address
