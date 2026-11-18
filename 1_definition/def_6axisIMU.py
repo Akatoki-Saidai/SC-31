@@ -21,13 +21,12 @@ class ICM
             raise RuntimeError("ICM-42605 is not detected")
 
         # Initialize the sensor
-        # PWR_MANAGEMENT -> GYRO_MODE : low noise, ACCEL_MODE : low noise
-        bus.write_byte_data(I2C_ADDRESS, 0x4E, 0x0F)
-        time.sleep(0.05)
         # GYRO_CONFIG -> GYRO_FULLSCALERANGE_SELECT : ±250bps, GYRO_ODR : 100Hz
         bus.write_byte_data(I2C_ADDRESS, 0x4F, 0x68)
         # ACCEL_CONFIG -> ACCEL_FULLSCALERANGE_SELECT : ±4g, ACCEL_ODR : 100Hz
         bus.write_byte_data(I2C_ADDRESS, 0x50, 0x48)
+        # PWR_MANAGEMENT -> GYRO_MODE : low noise, ACCEL_MODE : low noise
+        bus.write_byte_data(I2C_ADDRESS, 0x4E, 0x0F)
 
     # Read acceleration and angular velocity
     def read():
