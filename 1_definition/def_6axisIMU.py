@@ -4,9 +4,6 @@
 # ----------------------------------------
 
 import smbus2
-import time
-import math
-import numpy as np
 
 # I2C settings
 I2C_ADDRESS = 0x68
@@ -42,6 +39,9 @@ class ICM
             *[v / GYRO_SCALE for v in values[3:]]
         )
 '''
+import time
+import math
+import numpy as np
 # Measurement phase
 PHASE = "descent"  # descent: during free fall, landed: after landing
 
