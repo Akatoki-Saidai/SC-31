@@ -4,6 +4,8 @@
 # ----------------------------------------
 from smbus2 import i2c_msg,SMBus
 import time
+import threading
+import queue
 
 device_address = 0x42 # I2c address of the GNSS module
 # print("device_address_type: ",type(device_address))
@@ -135,6 +137,7 @@ class GNSS:
         # print("the test_ubx_nav_pvt is: ",ubx_nav_pvt_testdata.hex(" "))
         return ubx_nav_pvt_testdata
 
+### Read available data from the GNSS module via I2C ###
     def read_GNSS(self,bus):
         message = b""
 
@@ -156,7 +159,7 @@ class GNSS:
 
 
 
-
+### Find and validate a UBX-NAV-PVT packet in the received data ###
     def find_ubx_nav_pvt(self,message):
         header_ubx_nav_pvt = bytes.fromhex("b56201075c00")
         index=None
@@ -188,10 +191,11 @@ class GNSS:
                 message = message[index:]
                 print("a part of ubx_nav_pvt is found!")
                 return "incomplete", message,b""
-        
-    def collect_ubx_nav_pvt(self,bus,pending=b""):
+
+### Collect GNSS data until a complete UBX-NAV-PVT packet is received ###        
+    def collect_ubx_nav_pvt(self,bus):
         cnt = 0
-        message = pending
+        message = self.pending
         while cnt <30:
             flag,message,packetdata= self.find_ubx_nav_pvt(message)
             if flag == "complete":
@@ -214,10 +218,6 @@ class GNSS:
         return message,None
                 
                 
-
-
-
-
 
     def parse_ubx_nav_pvt(self,packetdata):
         payload=packetdata[6:-2]
@@ -349,18 +349,51 @@ class GNSS:
 
         return gnss_data    
 
+### Receive and parse a UBX-NAV-PVT packet with a reception timestamp ###
     def get_ubx_nav_pvt(self,bus):
-        self.pending,packetdata = self.collect_ubx_nav_pvt(bus,self.pending)
+        self.pending,packetdata = self.collect_ubx_nav_pvt(bus)
         if packetdata != None:
+            received_at = time.monotonic()
             print("ubx_nav_pvt packet is received.")
             print("length of packet is : ",len(packetdata))
             gnss_data = self.parse_ubx_nav_pvt(packetdata)
+            gnss_data["received_at_monotonic"]=received_at
             # print(gnss_data)
             return gnss_data
 
         else:
             print("ubx_nav_pvt acquisition is failed.")
             return None
+
+    def gnss_loop(self,gnss_queue,stop_event):
+        busNum = 1
+        with SMBus(busNum) as bus:
+            flag=self.configure_gnss(bus)
+            
+            if flag ==1:
+
+                while not stop_event.is_set():
+                    gnss_data = self.get_ubx_nav_pvt(bus)
+                    if gnss_data is not None:
+                        try:
+                            gnss_queue.put_nowait(gnss_data)
+                        except queue.Full:
+                            try:
+                                gnss_queue.get_nowait()
+                            except queue.Empty:
+                                pass
+
+                            try:
+                                gnss_queue.put_nowait(gnss_data)
+                            except queue.Full:
+                                pass
+
+
+            else: 
+                print("GNSS configuration is failed.",flag)
+
+
+
 
 
 if __name__ == "__main__":
@@ -371,11 +404,6 @@ if __name__ == "__main__":
     # short_test_message = test_message[:-10]
     # flag,frag_data,packetdata = find_ubx_nav_pvt(short_test_message)
     # print("flag is : ",flag,"\nfrag_data is : ",frag_data.hex(" "),"\npacket data is : ",packetdata.hex(" ")) 
-
-        
-    
-
-
 
     busNum = 1
     with SMBus(busNum) as bus:
