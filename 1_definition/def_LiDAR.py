@@ -11,7 +11,7 @@ class TFmini:
         self.bus = i2cbus
     def read():
         try:
-            #Obtain Data Frame in 9bytes-cm
+            #Obtain Data Frame in 9bytes-cm  
             command = [0x5A, 0x05, 0x00, 0x01, 0x60]
 
             write_data = i2c_msg.write(LiDAR_addr, command)
